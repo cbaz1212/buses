@@ -11,17 +11,71 @@ void main() {
   runApp(const MyApp());
 }
 
-Future<void> requestBluetoothPermissions() async {
+Future<void> requestBluetoothPermissions(BuildContext context) async {
   // Lista de permisos necesarios para Android 12+
+  // IMPORTANTE: Android 12 requiere permisos de tiempo de ejecución para Bluetooth
   Map<Permission, PermissionStatus> statuses = await [
     Permission.bluetoothScan,
     Permission.bluetoothConnect,
     Permission.bluetoothAdvertise,
+    Permission.location, // Requerido en Android 12 para escaneo BLE
   ].request();
 
+  // Verificar el estado de cada permiso y mostrar al usuario
+  List<String> permisosNegados = [];
+  bool hayPermisoPermanentementeDenegado = false;
+
   if (statuses[Permission.bluetoothScan]?.isDenied ?? false) {
-    // El usuario denegó el permiso
-    print("Permiso de escaneo denegado");
+    permisosNegados.add("Escaneo de Bluetooth");
+  }
+  if (statuses[Permission.bluetoothScan]?.isPermanentlyDenied ?? false) {
+    hayPermisoPermanentementeDenegado = true;
+  }
+  
+  if (statuses[Permission.bluetoothConnect]?.isDenied ?? false) {
+    permisosNegados.add("Conexión de Bluetooth");
+  }
+  if (statuses[Permission.bluetoothConnect]?.isPermanentlyDenied ?? false) {
+    hayPermisoPermanentementeDenegado = true;
+  }
+  
+  if (statuses[Permission.location]?.isDenied ?? false) {
+    permisosNegados.add("Ubicación (requerido para Android 12)");
+  }
+  if (statuses[Permission.location]?.isPermanentlyDenied ?? false) {
+    hayPermisoPermanentementeDenegado = true;
+  }
+
+  // Mostrar alerta al usuario si hay permisos denegados
+  if (permisosNegados.isNotEmpty) {
+    if (!context.mounted) return;
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("Permisos Requeridos"),
+          content: Text(
+            "Los siguientes permisos fueron denegados:\n\n${permisosNegados.join('\n')}\n\nEstos permisos son necesarios para conectar a la impresora Bluetooth.",
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text("Entendido"),
+            ),
+            if (hayPermisoPermanentementeDenegado)
+              ElevatedButton.icon(
+                onPressed: () {
+                  openAppSettings();
+                  Navigator.of(context).pop();
+                },
+                icon: const Icon(Icons.settings),
+                label: const Text("Ir a Configuración"),
+              ),
+          ],
+        );
+      },
+    );
   }
 }
 
@@ -993,7 +1047,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         child: ElevatedButton.icon(
                           onPressed: _ticketRendered
                               ? () async {
-                                  await requestBluetoothPermissions();
+                                  await requestBluetoothPermissions(context);
                                   final address =
                                       await bluetooth_printer
                                           .FlutterBluetoothPrinter.selectDevice(

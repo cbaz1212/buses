@@ -1078,8 +1078,6 @@ class _MyHomePageState extends State<MyHomePage> {
       child: Column(
         children: [
           // CABECERA CON LOGO
-          Image.asset('assets/logo.png', height: 40, fit: BoxFit.contain),
-          const SizedBox(height: 4),
           const Text(
             'TransSandona S.A ',
             style: TextStyle(fontSize: bigFont, fontWeight: FontWeight.bold),
@@ -1159,21 +1157,19 @@ class _MyHomePageState extends State<MyHomePage> {
             'ADQUIRENTE',
             style: TextStyle(
               fontWeight: FontWeight.bold,
-              fontSize: bigFont - 1,
+              fontSize: mediumFont,
             ),
           ),
           const SizedBox(height: 6),
           Text(
             'Nombre: ${_ticketNombre ?? ''}',
             style: const TextStyle(
-              fontWeight: FontWeight.bold,
               fontSize: mediumFont,
             ),
           ),
           Text(
             'Cédula: ${_ticketCedula ?? ''}',
             style: const TextStyle(
-              fontWeight: FontWeight.bold,
               fontSize: mediumFont,
             ),
           ),
@@ -1186,7 +1182,7 @@ class _MyHomePageState extends State<MyHomePage> {
               data:
                   'https://drive.google.com/file/d/15ED0epFpA9Wlcr28KbPfAm18KA4Z5fiL/view?usp=drivesdk',
               version: QrVersions.auto,
-              size: 150,
+              size: 120,
               gapless: true,
             ),
           ),

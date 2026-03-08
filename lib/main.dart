@@ -12,35 +12,46 @@ void main() {
 }
 
 Future<void> requestBluetoothPermissions(BuildContext context) async {
-  // Lista de permisos necesarios para Android 12+
-  // IMPORTANTE: Android 12 requiere permisos de tiempo de ejecución para Bluetooth
-  Map<Permission, PermissionStatus> statuses = await [
+  // Lista de permisos necesarios para Android 12+/15
+  // IMPORTANTE: Android 15 requiere permisos específicos de Bluetooth
+  List<Permission> permissionsToRequest = [
     Permission.bluetoothScan,
     Permission.bluetoothConnect,
-    Permission.bluetoothAdvertise,
-    Permission.location, // Requerido en Android 12 para escaneo BLE
-  ].request();
+  ];
+
+  // Agregar permisos de ubicación si es necesario (para BLE scanning)
+  permissionsToRequest.add(Permission.location);
+
+  // En algunos casos, también puede ser necesario:
+  if (await Permission.bluetoothAdvertise.status.isDenied) {
+    permissionsToRequest.add(Permission.bluetoothAdvertise);
+  }
+
+  Map<Permission, PermissionStatus> statuses = await permissionsToRequest.request();
 
   // Verificar el estado de cada permiso y mostrar al usuario
   List<String> permisosNegados = [];
   bool hayPermisoPermanentementeDenegado = false;
 
-  if (statuses[Permission.bluetoothScan]?.isDenied ?? false) {
+  if ((statuses[Permission.bluetoothScan]?.isDenied ?? false) ||
+      (statuses[Permission.bluetoothScan]?.isRestricted ?? false)) {
     permisosNegados.add("Escaneo de Bluetooth");
   }
   if (statuses[Permission.bluetoothScan]?.isPermanentlyDenied ?? false) {
     hayPermisoPermanentementeDenegado = true;
   }
-  
-  if (statuses[Permission.bluetoothConnect]?.isDenied ?? false) {
+
+  if ((statuses[Permission.bluetoothConnect]?.isDenied ?? false) ||
+      (statuses[Permission.bluetoothConnect]?.isRestricted ?? false)) {
     permisosNegados.add("Conexión de Bluetooth");
   }
   if (statuses[Permission.bluetoothConnect]?.isPermanentlyDenied ?? false) {
     hayPermisoPermanentementeDenegado = true;
   }
-  
-  if (statuses[Permission.location]?.isDenied ?? false) {
-    permisosNegados.add("Ubicación (requerido para Android 12)");
+
+  if ((statuses[Permission.location]?.isDenied ?? false) ||
+      (statuses[Permission.location]?.isRestricted ?? false)) {
+    permisosNegados.add("Ubicación (requerido para Android 12+)");
   }
   if (statuses[Permission.location]?.isPermanentlyDenied ?? false) {
     hayPermisoPermanentementeDenegado = true;
@@ -56,7 +67,7 @@ Future<void> requestBluetoothPermissions(BuildContext context) async {
         return AlertDialog(
           title: const Text("Permisos Requeridos"),
           content: Text(
-            "Los siguientes permisos fueron denegados:\n\n${permisosNegados.join('\n')}\n\nEstos permisos son necesarios para conectar a la impresora Bluetooth.",
+            "Los siguientes permisos son necesarios para conectar a la impresora Bluetooth:\n\n${permisosNegados.join('\n')}\n\nSi los permisos están denegados permanentemente, abre la configuración de la aplicación.",
           ),
           actions: [
             TextButton(
@@ -1084,7 +1095,6 @@ class _MyHomePageState extends State<MyHomePage> {
           : null,
     );
   }
-
   // -----------------------------------------------------------------
   // WIDGET AUXILIAR: Contenido del Ticket
   // -----------------------------------------------------------------
